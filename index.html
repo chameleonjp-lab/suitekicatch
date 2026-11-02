@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>水滴キャッチ</title>
+  <style>
+    :root {
+      --bg1: #eaf7ff;
+      --bg2: #f8fcff;
+      --main: #1f6f9f;
+      --main-dark: #154d70;
+      --danger: #c84b4b;
+      --text: #1d2b36;
+      --muted: #667885;
+      --card: rgba(255, 255, 255, 0.92);
+      --shadow: 0 12px 30px rgba(35, 88, 125, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 50% 0%, rgba(116, 202, 244, 0.35), transparent 34%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      overscroll-behavior: none;
+    }
+
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    button {
+      font: inherit;
+      border: none;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 430px;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: max(16px, env(safe-area-inset-top)) 14px max(16px, env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen {
+      display: none;
+      width: 100%;
+      flex: 1;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid rgba(31, 111, 159, 0.12);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      padding: 22px 18px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: clamp(2rem, 9vw, 2.8rem);
+      line-height: 1.12;
+      letter-spacing: -0.04em;
+      color: var(--main-dark);
+      text-align: center;
+    }
+
+    .subtitle {
+      margin: 12px auto 0;
+      max-width: 320px;
+      font-size: 0.98rem;
+      line-height: 1.7;
+      color: var(--muted);
+      text-align: center;
+      display: block;
+    }
+
+    .best-box {
+      margin-top: 18px;
+      padding: 14px;
+      border-radius: 18px;
+      background: rgba(83, 184, 232, 0.12);
+      border: 1px solid rgba(83, 184, 232, 0.24);
+      text-align: center;
+    }
+
+    .best-label {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .best-value {
+      font-size: 1.22rem;
+      font-weight: 800;
+      color: var(--main-dark);
+    }
+
+    .notice {
+      margin-top: 14px;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: var(--muted);
+      text-align: left;
+      background: rgba(255, 255, 255, 0.58);
+      border-radius: 14px;
+      padding: 10px 12px;
+    }
+
+    .button-area {
+      display: grid;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .primary-btn,
+    .secondary-btn {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 999px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      transition: transform 0.08s ease, opacity 0.12s ease;
+    }
+
+    .primary-btn {
+      background: var(--main);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(31, 111, 159, 0.22);
+    }
+
+    .secondary-btn {
+      background: #fff;
+      color: var(--main-dark);
+      border: 1px solid rgba(31, 111, 159, 0.18);
+    }
+
+    .primary-btn:active,
+    .secondary-btn:active,
+    .retire-btn:active {
+      transform: scale(0.985);
+      opacity: 0.9;
+    }
+
+    .game-screen {
+      justify-content: stretch;
+    }
+
+    .game-header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 6px 2px 12px;
+    }
+
+    .retire-btn {
+      min-width: 86px;
+      min-height: 40px;
+      border-radius: 999px;
+      background: rgba(200, 75, 75, 0.12);
+      color: var(--danger);
+      border: 1px solid rgba(200, 75, 75, 0.25);
+      font-weight: 800;
+      transition: transform 0.08s ease, opacity 0.12s ease;
+    }
+
+    .play-field {
+      position: relative;
+      flex: 1;
+      min-height: 420px;
+      max-height: 680px;
+      border-radius: 26px;
+      overflow: hidden;
+      border: 1px solid rgba(31, 111, 159, 0.12);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.82), rgba(226,246,255,0.74)),
+        radial-gradient(circle at 50% 18%, rgba(255,255,255,0.94), transparent 30%);
+      box-shadow: inset 0 0 26px rgba(83, 184, 232, 0.14), var(--shadow);
+      touch-action: manipulation;
+      user-select: none;
+    }
+
+    .tap-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      touch-action: none;
+    }
+
+    .drop {
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      top: 8%;
+      width: 1em;
+      height: 1em;
+      font-size: clamp(42px, 15vw, 64px);
+      line-height: 1;
+      text-align: center;
+      transform: translate(-50%, -50%);
+      filter: drop-shadow(0 10px 12px rgba(31, 111, 159, 0.18));
+      transition: opacity 0.25s ease;
+      will-change: top, transform;
+    }
+
+    .cup-wrap {
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      bottom: 9%;
+      width: min(58vw, 230px);
+      height: min(34vw, 138px);
+      transform: translateX(-50%);
+    }
+
+    .cup {
+      position: absolute;
+      inset: 0;
+      border: 7px solid rgba(31, 111, 159, 0.58);
+      border-top: 0;
+      border-radius: 0 0 30px 30px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0.72)),
+        linear-gradient(180deg, rgba(83,184,232,0.12), rgba(83,184,232,0.22));
+      box-shadow: inset 0 -12px 20px rgba(31, 111, 159, 0.08);
+    }
+
+    .cup::before {
+      content: "";
+      position: absolute;
+      left: -10px;
+      right: -10px;
+      top: -9px;
+      height: 18px;
+      border-radius: 999px;
+      border: 5px solid rgba(31, 111, 159, 0.58);
+      background: rgba(255,255,255,0.72);
+    }
+
+    .water-line {
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      bottom: 14%;
+      height: 18%;
+      border-radius: 999px 999px 20px 20px;
+      background: rgba(83, 184, 232, 0.28);
+      opacity: 0.5;
+    }
+
+    .result-title {
+      margin: 0;
+      font-size: clamp(1.8rem, 8vw, 2.45rem);
+      line-height: 1.15;
+      text-align: center;
+      color: var(--main-dark);
+    }
+
+    .result-badge {
+      width: fit-content;
+      margin: 14px auto 0;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(31, 111, 159, 0.1);
+      color: var(--main-dark);
+      font-weight: 800;
+      font-size: 0.95rem;
+    }
+
+    .result-badge.fail {
+      background: rgba(200, 75, 75, 0.12);
+      color: var(--danger);
+    }
+
+    .score-box {
+      margin-top: 18px;
+      padding: 18px 14px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(31, 111, 159, 0.12);
+      text-align: center;
+    }
+
+    .score-label {
+      font-size: 0.84rem;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+
+    .score-value {
+      font-size: clamp(2rem, 12vw, 3.1rem);
+      line-height: 1.05;
+      font-weight: 900;
+      color: var(--main-dark);
+      letter-spacing: -0.03em;
+    }
+
+    .message-box {
+      margin-top: 14px;
+      padding: 16px 14px;
+      border-radius: 18px;
+      background: rgba(83, 184, 232, 0.12);
+      border: 1px solid rgba(83, 184, 232, 0.22);
+      text-align: center;
+      font-size: 1.05rem;
+      line-height: 1.65;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .final-judge {
+      margin-top: 10px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(18px + env(safe-area-inset-bottom));
+      z-index: 20;
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+      background: rgba(29, 43, 54, 0.92);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 0.88rem;
+      transition: opacity 0.16s ease, transform 0.16s ease;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-height: 670px) {
+      .app {
+        padding-top: max(10px, env(safe-area-inset-top));
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
+      }
+
+      .card {
+        padding: 18px 16px;
+        border-radius: 22px;
+      }
+
+      .title {
+        font-size: 2rem;
+      }
+
+      .subtitle {
+        font-size: 0.9rem;
+        line-height: 1.55;
+      }
+
+      .notice {
+        font-size: 0.72rem;
+        line-height: 1.45;
+      }
+
+      .play-field {
+        min-height: 360px;
+      }
+
+      .button-area {
+        margin-top: 14px;
+        gap: 8px;
+      }
+
+      .primary-btn,
+      .secondary-btn {
+        min-height: 44px;
+      }
+    }
+
+    .name-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(20, 45, 62, 0.36);
+      backdrop-filter: blur(6px);
+    }
+
+    .name-modal.active {
+      display: flex;
+    }
+
+    .name-card {
+      width: min(100%, 360px);
+      background: var(--card);
+      border: 1px solid rgba(31, 111, 159, 0.14);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 20px 16px;
+    }
+
+    .name-title {
+      margin: 0;
+      font-size: 1.28rem;
+      color: var(--main-dark);
+      text-align: center;
+    }
+
+    .name-text {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .name-input {
+      width: 100%;
+      margin-top: 14px;
+      min-height: 46px;
+      border-radius: 14px;
+      border: 1px solid rgba(31, 111, 159, 0.18);
+      background: rgba(255, 255, 255, 0.88);
+      color: var(--text);
+      font: inherit;
+      font-size: 1rem;
+      padding: 0 12px;
+      outline: none;
+    }
+
+    .name-input:focus {
+      border-color: var(--main);
+      box-shadow: 0 0 0 3px rgba(31, 111, 159, 0.12);
+    }
+
+    .name-error {
+      min-height: 1.3em;
+      margin-top: 8px;
+      color: var(--danger);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    .countdown-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 8;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.34);
+      color: var(--main-dark);
+      font-size: clamp(4.4rem, 24vw, 7rem);
+      font-weight: 900;
+      line-height: 1;
+      text-shadow: 0 10px 22px rgba(31, 111, 159, 0.14);
+      pointer-events: none;
+    }
+
+    .countdown-overlay.active {
+      display: flex;
+    }
+
+    .online-box,
+    .ranking-box {
+      margin-top: 12px;
+      padding: 13px 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.68);
+      border: 1px solid rgba(31, 111, 159, 0.12);
+    }
+
+    .online-title,
+    .ranking-title {
+      color: var(--main-dark);
+      font-size: 0.92rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .online-status,
+    .ranking-status {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 0.84rem;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .online-stats {
+      display: grid;
+      gap: 6px;
+      margin-top: 10px;
+      font-size: 0.9rem;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .best-update {
+      color: var(--main-dark);
+      font-weight: 900;
+    }
+
+    .ranking-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .ranking-tab {
+      min-height: 38px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.76);
+      color: var(--main-dark);
+      border: 1px solid rgba(31, 111, 159, 0.16);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .ranking-tab.active {
+      background: var(--main);
+      color: #fff;
+      border-color: var(--main);
+    }
+
+    .ranking-panel {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .ranking-panel.active {
+      display: block;
+    }
+
+    .ranking-subtitle {
+      color: var(--main-dark);
+      font-size: 0.88rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .ranking-list {
+      list-style: none;
+      margin: 10px 0 0;
+      padding: 0;
+      display: grid;
+      gap: 6px;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .ranking-list li {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: rgba(83, 184, 232, 0.10);
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .language-settings { display: grid; gap: 6px; margin: 12px 0; }
+    #languageSelect { width: 100%; min-height: 44px; font: inherit; background: #fff; color: #111; }
+
+    #shareGameBtn, #shareResultBtn {
+      background: #000;
+      color: #fff;
+      min-height: 44px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="app">
+    <section id="homeScreen" class="screen active">
+      <div class="card">
+        <h1 class="title" data-i18n="gameTitle">水滴キャッチ</h1>
+        <p class="subtitle" data-i18n="intro">
+          水滴がコップに<br />
+          完全に入ったと思ったらタップ！
+        </p>
+
+        <div class="best-box">
+          <div class="best-label" data-i18n="bestRecord">ベスト記録</div>
+          <div id="bestValue" class="best-value">まだありません</div>
+        </div>
+
+        <p class="notice" data-i18n="storageNotice">
+          ベスト記録は、このブラウザ内に保存されます。保存データを消すと、記録が消える場合があります。別の端末や別のブラウザでは、同じ記録は表示されません。
+        </p>
+
+        <label class="home-name" for="nameInput">
+          <span class="name-title" data-i18n="playerName">プレイヤー名（任意）</span>
+          <input id="nameInput" data-i18n-placeholder="namePlaceholder" class="name-input" type="text" maxlength="20" autocomplete="nickname" placeholder="20文字まで" aria-describedby="nameDisclosure nameError" />
+        </label>
+        <p id="nameDisclosure" data-i18n="nameDisclosure" class="notice">名前を入力すると、名前と記録がランキングに公開されます。空欄でも遊べます。</p>
+        <div id="nameError" class="name-error" role="alert" aria-live="polite"></div>
+        <label class="language-settings" for="languageSelect"><span data-i18n="language">言語</span><select id="languageSelect"></select></label>
+        <div class="sound-settings">
+          <button id="soundToggle" class="secondary-btn" type="button" aria-pressed="true">音：オン</button>
+          <label for="soundVolume"><span data-i18n="volume">音量</span> <input id="soundVolume" type="range" min="0" max="1" step="0.05" value="0.2" /></label>
+        </div>
+        <div class="button-area">
+          <button id="startBtn" data-i18n="start" class="primary-btn" type="button">ゲームスタート</button>
+          <button id="shareGameBtn" data-i18n="shareX" class="secondary-btn" type="button">Xでシェア</button>
+          <a data-i18n="ranking" class="secondary-btn ranking-link" href="https://chameleonjp-lab.github.io/chameleonjp_lab/ranking.html?game=suiteki_catch" target="_blank" rel="noopener noreferrer">ランキング</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="gameScreen" class="screen game-screen">
+      <div class="game-header">
+        <button id="retireBtn" data-i18n="retire" class="retire-btn" type="button">リタイア</button>
+      </div>
+
+      <div id="playField" data-i18n-aria="gameScreen" class="play-field" aria-label="ゲーム画面">
+        <div id="drop" class="drop" aria-hidden="true">💧</div>
+
+        <div class="cup-wrap" aria-hidden="true">
+          <div class="cup">
+            <div class="water-line"></div>
+          </div>
+        </div>
+
+        <div id="countdownOverlay" class="countdown-overlay" aria-hidden="true">3</div>
+        <div id="tapLayer" class="tap-layer"></div>
+      </div>
+    </section>
+
+    <section id="resultScreen" class="screen">
+      <div class="card">
+        <h2 id="resultTitle" class="result-title">結果</h2>
+        <div id="resultBadge" class="result-badge">判定</div>
+
+        <div class="score-box">
+          <div class="score-label" data-i18n="patienceScore">忍耐スコア</div>
+          <div id="scoreValue" class="score-value">0秒</div>
+        </div>
+
+        <div id="resultMessage" class="message-box">
+          メッセージ
+        </div>
+
+        <div id="finalJudge" class="final-judge">
+          最終判定
+        </div>
+
+        <div class="online-box">
+          <div class="online-title" data-i18n="onlineRecord">オンライン記録</div>
+          <div id="supabaseStatus" class="online-status">結果送信待ち</div>
+          <div id="onlineStats" class="online-stats"></div>
+        </div>
+
+        <div class="button-area">
+          <button id="shareResultBtn" data-i18n="shareX" class="secondary-btn" type="button">Xでシェア</button>
+          <a data-i18n="ranking" class="secondary-btn ranking-link" href="https://chameleonjp-lab.github.io/chameleonjp_lab/ranking.html?game=suiteki_catch" target="_blank" rel="noopener noreferrer">ランキング</a>
+          <button id="retryBtn" data-i18n="retry" class="primary-btn" type="button">再ゲーム</button>
+          <button id="endBtn" data-i18n="home" class="secondary-btn" type="button">ゲーム終了</button>
+        </div>
+
+        <div class="ranking-box">
+          <div class="ranking-title" data-i18n="rankingHeading" data-i18n-params='{"count":30}'>ランキング TOP 30</div>
+
+          <div data-i18n-aria="rankingTabs" class="ranking-tabs" role="tablist" aria-label="ランキング切り替え">
+            <button id="bestRankingTab" data-i18n="bestScore" class="ranking-tab active" type="button" aria-selected="true">最高スコア</button>
+            <button id="firstRankingTab" data-i18n="firstTry" class="ranking-tab" type="button" aria-selected="false">初挑戦</button>
+          </div>
+
+          <div id="bestRankingPanel" class="ranking-panel active">
+            <div class="ranking-subtitle" data-i18n="bestRanking">最高スコアランキング</div>
+            <div id="bestRankingStatus" role="status" aria-live="polite" class="ranking-status">最高スコアランキング取得待ち</div>
+            <button id="bestRankingRetry" class="secondary-btn" type="button" data-i18n="tryAgain" disabled>再試行</button>
+            <ol id="bestRankingList" class="ranking-list"></ol>
+          </div>
+
+          <div id="firstRankingPanel" class="ranking-panel">
+            <div class="ranking-subtitle" data-i18n="firstRanking">初挑戦ランキング</div>
+            <div id="firstRankingStatus" role="status" aria-live="polite" class="ranking-status">初挑戦ランキング取得待ち</div>
+            <button id="firstRankingRetry" class="secondary-btn" type="button" data-i18n="tryAgain" disabled>再試行</button>
+            <ol id="firstRankingList" class="ranking-list"></ol>
+          </div>
+        </div>
+
+
+      </div>
+    </section>
+  </main>
+
+
+  <div id="toast" class="toast" role="status" aria-live="polite">クリップボードにコピーしました</div>
+
+  <script src="languages.js"></script>
+  <script src="i18n.js"></script>
+  <script src="audio.js"></script>
+  <script src="normal-score-ack8.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    (() => {
+      "use strict";
+
+      const GAME_TITLE = "水滴キャッチ";
+      const GAME_URL = "https://chameleonjp.codeberg.page/suiteki_catch/";
+      const SUPABASE_URL = "https://mlpnjgezrnhdxsxolyzj.supabase.co";
+      const SUPABASE_PUBLISHABLE_KEY = "ここにPublishable keyを入れる";
+      const GAME_SLUG = "suiteki_catch";
+      const CLIENT_VERSION = "suiteki-catch-v1";
+      const CLEAR_SECONDS = 65;
+      const CLEAR_MS = CLEAR_SECONDS * 1000;
+      const STORAGE_KEY = "waterDropPatienceBest_v2";
+      const PLAYER_NAME_STORAGE_KEY = "suiteki_catch_player_name_v1";
+
+      const secondMessages = {
+        1: "まだ何も始まってません。",
+        2: "水滴、見ました？",
+        3: "早すぎて逆に才能です。",
+        4: "その指、落ち着かせてください。",
+        5: "5秒で限界ですか。",
+        6: "待つ気、ありました？",
+        7: "コップより先に心がこぼれました。",
+        8: "まだ水滴は旅の途中です。",
+        9: "せっかちが画面から伝わりました。",
+        10: "10秒記念、失敗です。",
+        11: "少し待てた気になりましたね。",
+        12: "ここで押すのは早いです。",
+        13: "水滴は急かしていません。",
+        14: "たぶん、雰囲気で押しましたね。",
+        15: "15秒で勝った気にならないでください。",
+        16: "まだ入ってないです。目を覚ましてください。",
+        17: "焦りだけは一人前です。",
+        18: "コップが困っています。",
+        19: "待つ才能、今日は休みです。",
+        20: "20秒耐えた自分を信じすぎました。",
+        21: "その判断、早すぎました。",
+        22: "ここで押すの、なかなか早いです。",
+        23: "水滴よりあなたの指が先走りました。",
+        24: "まだ勝負は始まったばかりです。",
+        25: "半分にも届いていません。",
+        26: "ここからなのに、ここで終わりました。",
+        27: "もう少し見守る心が必要でした。",
+        28: "コップに入った気がしただけです。",
+        29: "気のせいで負けました。",
+        30: "30秒待って、なぜ今押したんですか。",
+        31: "忍耐の芽を自分で摘みました。",
+        32: "「あと少し」に見える罠でした。",
+        33: "あなたは水滴を信じきれませんでした。",
+        34: "その一押しで全部台無しです。",
+        35: "35秒耐えて、押すんですね。",
+        36: "まだです。本当にまだです。",
+        37: "ここまで来たのに、もったいない。",
+        38: "水滴の方が落ち着いていました。",
+        39: "あなたの焦りが先に着地しました。",
+        40: "40秒の努力を自分で消しました。",
+        41: "あと少しが苦手なタイプです。",
+        42: "ここで負けるの、かなり味があります。",
+        43: "期待した分だけ、残念です。",
+        44: "もう勝ちが見えていたのに。",
+        45: "45秒待ってから押す判断、深いです。",
+        46: "ここで焦る人が一番危ないです。",
+        47: "勝利の手前で手が滑りました。",
+        48: "水滴は悪くありません。",
+        49: "信じる力が足りませんでした。",
+        50: "50秒まで来て、それですか。",
+        51: "ここからの5秒が本番でした。",
+        52: "これは早押しゲームではありません。",
+        53: "もう少しで伝説でした。",
+        54: "忍耐があと11秒足りません。",
+        55: "55秒耐えて負けるのは芸術です。",
+        56: "ここで押すのは、かなり痛いです。",
+        57: "もう勝っていた未来がありました。",
+        58: "水滴はまだ完璧に入っていません。",
+        59: "1分目前で心が折れました。",
+        60: "60秒待って、最後に裏切りました。",
+        61: "あと4秒でした。",
+        62: "あと3秒でした。我慢とは何だったのか。",
+        63: "あと2秒で伝説でした。",
+        64: "なぜ押したんですか。",
+        65: "完璧です。あなたは待ち切りました。"
+      };
+
+      const els = {
+        homeScreen: document.getElementById("homeScreen"),
+        gameScreen: document.getElementById("gameScreen"),
+        resultScreen: document.getElementById("resultScreen"),
+        bestValue: document.getElementById("bestValue"),
+        startBtn: document.getElementById("startBtn"),
+        shareGameBtn: document.getElementById("shareGameBtn"),
+        retireBtn: document.getElementById("retireBtn"),
+        tapLayer: document.getElementById("tapLayer"),
+        drop: document.getElementById("drop"),
+        resultTitle: document.getElementById("resultTitle"),
+        resultBadge: document.getElementById("resultBadge"),
+        scoreValue: document.getElementById("scoreValue"),
+        resultMessage: document.getElementById("resultMessage"),
+        finalJudge: document.getElementById("finalJudge"),
+        shareResultBtn: document.getElementById("shareResultBtn"),
+        retryBtn: document.getElementById("retryBtn"),
+        endBtn: document.getElementById("endBtn"),
+        nameInput: document.getElementById("nameInput"),
+        languageSelect: document.getElementById("languageSelect"),
+        soundToggle: document.getElementById("soundToggle"),
+        soundVolume: document.getElementById("soundVolume"),
+        nameError: document.getElementById("nameError"),
+        countdownOverlay: document.getElementById("countdownOverlay"),
+        supabaseStatus: document.getElementById("supabaseStatus"),
+        onlineStats: document.getElementById("onlineStats"),
+        bestRankingTab: document.getElementById("bestRankingTab"),
+        firstRankingTab: document.getElementById("firstRankingTab"),
+        bestRankingPanel: document.getElementById("bestRankingPanel"),
+        firstRankingPanel: document.getElementById("firstRankingPanel"),
+        bestRankingStatus: document.getElementById("bestRankingStatus"),
+        bestRankingRetry: document.getElementById("bestRankingRetry"),
+        firstRankingStatus: document.getElementById("firstRankingStatus"),
+        firstRankingRetry: document.getElementById("firstRankingRetry"),
+        bestRankingList: document.getElementById("bestRankingList"),
+        firstRankingList: document.getElementById("firstRankingList"),
+        toast: document.getElementById("toast")
+      };
+
+      let audioStorage = null;
+      try { audioStorage = window.localStorage; } catch (_) {}
+      const gameAudio = SuitekiAudio.create({
+        storage: audioStorage,
+        contextFactory: () => {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          return AudioContextClass ? new AudioContextClass() : null;
+        }
+      });
+      const heardResults = new WeakSet();
+      const bestUpdatedResults = new WeakSet();
+      const localeState = SuitekiI18n.create({
+        catalogs: SuitekiCatalogs,
+        storage: audioStorage,
+        browserLanguages: navigator.languages,
+        browserLanguage: navigator.language
+      });
+      const t = (key, values) => localeState.t(key, values);
+
+      let gameActive = false;
+      let countdownRunning = false;
+      let startTime = 0;
+      let animationId = null;
+      let latestResult = null;
+      let onlineResultInfo = null;
+      let scoreSubmitted = false;
+      let playerName = "";
+      let activeParticipation = null;
+      let supabaseClient = null;
+      const rankingReadGeneration = { best: 0, first: 0 };
+
+      function setLocalized(element, key, values = {}, suffixKey = "") {
+        if (!key) {
+          delete element.dataset.i18n;
+          delete element.dataset.i18nParams;
+          delete element.dataset.i18nSuffix;
+          delete element.dataset.i18nNameKey;
+          element.textContent = "";
+          return;
+        }
+        element.dataset.i18n = key;
+        element.dataset.i18nParams = JSON.stringify(values);
+        element.dataset.i18nSuffix = suffixKey;
+        const renderedValues = element.dataset.i18nNameKey === "unnamed" ? { ...values, name: t("unnamed") } : values;
+        element.textContent = t(key, renderedValues) + (suffixKey ? ": " + t(suffixKey) : "");
+      }
+
+      function applyLanguage() {
+        document.documentElement.lang = localeState.language;
+        document.title = t("gameTitle");
+        document.querySelectorAll("[data-i18n]").forEach((element) => {
+          const values = JSON.parse(element.dataset.i18nParams || "{}");
+          if (element.dataset.i18nNameKey === "unnamed") values.name = t("unnamed");
+          element.textContent = t(element.dataset.i18n, values) +
+            (element.dataset.i18nSuffix ? ": " + t(element.dataset.i18nSuffix) : "");
+        });
+        document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+          element.setAttribute("placeholder", t(element.dataset.i18nPlaceholder));
+        });
+        document.querySelectorAll("[data-i18n-aria]").forEach((element) => {
+          element.setAttribute("aria-label", t(element.dataset.i18nAria));
+        });
+        updateBestDisplay();
+        renderAudioSettings();
+        if (latestResult) renderResult(latestResult);
+      }
+
+      function bindLanguageControls() {
+        for (const language of SuitekiI18n.options) {
+          const option = document.createElement("option");
+          option.value = language.id;
+          option.textContent = language.name;
+          els.languageSelect.appendChild(option);
+        }
+        els.languageSelect.value = localeState.language;
+        els.languageSelect.addEventListener("change", () => {
+          if (gameActive || countdownRunning) {
+            els.languageSelect.value = localeState.language;
+            return;
+          }
+          if (localeState.setLanguage(els.languageSelect.value)) applyLanguage();
+          else els.languageSelect.value = localeState.language;
+        });
+        applyLanguage();
+      }
+
+      function renderAudioSettings() {
+        const settings = gameAudio.getSettings();
+        els.soundToggle.textContent = t("sound") + ": " + t(settings.enabled ? "soundOn" : "soundOff");
+        els.soundToggle.setAttribute("aria-pressed", String(settings.enabled));
+        els.soundVolume.value = String(settings.volume);
+      }
+
+      function bindAudioControls() {
+        renderAudioSettings();
+        const isAudioControl = (event) => event.target?.closest?.("#soundToggle, #soundVolume");
+        document.addEventListener("pointerdown", (event) => {
+          if (!isAudioControl(event)) gameAudio.unlock();
+        }, { capture: true, passive: true });
+        document.addEventListener("keydown", (event) => {
+          if (!event.repeat && !event.isComposing && (event.key === "Enter" || event.key === " ") && !isAudioControl(event)) gameAudio.unlock();
+        }, true);
+        els.soundToggle.addEventListener("click", () => {
+          gameAudio.setEnabled(!gameAudio.getSettings().enabled);
+          renderAudioSettings();
+          gameAudio.unlock();
+        });
+        els.soundVolume.addEventListener("input", () => {
+          gameAudio.setVolume(Number(els.soundVolume.value));
+          renderAudioSettings();
+          gameAudio.unlock();
+        });
+        document.addEventListener("visibilitychange", () => gameAudio.setHidden(document.hidden));
+        window.addEventListener("pagehide", (event) => {
+          gameAudio.setHidden(true);
+          if (!event.persisted) gameAudio.dispose();
+        });
+        window.addEventListener("pageshow", () => gameAudio.setHidden(document.hidden));
+      }
+
+      function playResultAudio(result) {
+        if (!result || heardResults.has(result)) return;
+        heardResults.add(result);
+        gameAudio.play(bestUpdatedResults.has(result) ? "best" : result.status);
+      }
+
+      function showScreen(screenName) {
+        els.homeScreen.classList.toggle("active", screenName === "home");
+        els.gameScreen.classList.toggle("active", screenName === "game");
+        els.resultScreen.classList.toggle("active", screenName === "result");
+      }
+
+      function loadBest() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return null;
+          const parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed.seconds !== "number") return null;
+          return parsed;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function saveBest(result) {
+        const currentBest = loadBest();
+        const shouldSave =
+          !currentBest ||
+          result.seconds > currentBest.seconds ||
+          (result.seconds === currentBest.seconds && result.status === "clear" && currentBest.status !== "clear");
+
+        if (!shouldSave) return;
+
+        const data = {
+          seconds: result.seconds,
+          status: result.status,
+          message: result.message,
+          savedAt: new Date().toISOString()
+        };
+
+        try {
+          const serialized = JSON.stringify(data);
+          localStorage.setItem(STORAGE_KEY, serialized);
+          if (localStorage.getItem(STORAGE_KEY) === serialized) bestUpdatedResults.add(result);
+        } catch (_) {
+          // 保存できなくてもゲームは続ける
+        }
+      }
+
+      function updateBestDisplay() {
+        const best = loadBest();
+        if (!best) {
+          els.bestValue.textContent = t("noRecord");
+          return;
+        }
+        const key = best.status === "clear" ? "bestClear" : best.status === "retire" ? "bestRetire" : "bestFail";
+        els.bestValue.textContent = t(key, { seconds: best.seconds });
+      }
+
+
+      function readSavedPlayerName() {
+        try {
+          return (localStorage.getItem(PLAYER_NAME_STORAGE_KEY) || "").trim().slice(0, 20);
+        } catch (_) {
+          return "";
+        }
+      }
+
+      function savePlayerName(name) {
+        try {
+          localStorage.setItem(PLAYER_NAME_STORAGE_KEY, name);
+        } catch (_) {
+          // 保存できない環境でもゲームは続ける
+        }
+      }
+
+      function handleStartRequest() {
+        const name = String(els.nameInput.value || "").trim();
+        setLocalized(els.nameError, "");
+        if (name.length > 20) {
+          setLocalized(els.nameError, "nameTooLong");
+          return;
+        }
+        playerName = name;
+        savePlayerName(name);
+        activeParticipation = Object.freeze({ name, eligible: name.length > 0 });
+        beginCountdown();
+      }
+
+      function prepareGameVisuals() {
+        latestResult = null;
+        onlineResultInfo = null;
+        scoreSubmitted = false;
+
+        els.drop.style.opacity = "1";
+        els.drop.style.top = "8%";
+        els.drop.style.transform = "translate(-50%, -50%)";
+
+        clearOnlineDisplays();
+      }
+
+      function beginCountdown() {
+        countdownRunning = true;
+        gameActive = false;
+        prepareGameVisuals();
+        showScreen("game");
+        els.retireBtn.disabled = true;
+
+        const counts = ["3", "2", "1"];
+        let index = 0;
+
+        els.countdownOverlay.textContent = counts[index];
+        els.countdownOverlay.classList.add("active");
+        gameAudio.play("countdown");
+
+        const tick = () => {
+          index += 1;
+
+          if (index < counts.length) {
+            els.countdownOverlay.textContent = counts[index];
+            gameAudio.play("countdown");
+            window.setTimeout(tick, 1000);
+            return;
+          }
+
+          window.setTimeout(() => {
+            els.countdownOverlay.classList.remove("active");
+            countdownRunning = false;
+            startGame();
+            gameAudio.play("start");
+          }, 1000);
+        };
+
+        window.setTimeout(tick, 1000);
+      }
+
+      function getSupabaseClient() {
+        if (!window.supabase || !window.supabase.createClient) {
+          throw new Error("Supabaseライブラリを読み込めませんでした");
+        }
+
+        if (!SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY.includes("ここに")) {
+          throw new Error("Supabase Publishable key が未設定です");
+        }
+
+        if (!supabaseClient) {
+          supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+        }
+
+        return supabaseClient;
+      }
+
+      function clearOnlineDisplays() {
+        els.bestRankingRetry.disabled = true;
+        els.firstRankingRetry.disabled = true;
+        setLocalized(els.supabaseStatus, "awaitingResult");
+        els.onlineStats.innerHTML = "";
+        setLocalized(els.bestRankingStatus, "bestWaiting");
+        setLocalized(els.firstRankingStatus, "firstWaiting");
+        els.bestRankingList.innerHTML = "";
+        els.firstRankingList.innerHTML = "";
+        setRankingTab("best");
+      }
+
+
+      function normalizeRpcRow(data) {
+        if (Array.isArray(data)) return data[0] || {};
+        return data || {};
+      }
+
+      function pickNumber(row, keys) {
+        for (const key of keys) {
+          if (row && row[key] !== undefined && row[key] !== null && row[key] !== "") {
+            const value = Number(row[key]);
+            if (Number.isFinite(value)) return value;
+          }
+        }
+        return null;
+      }
+
+      function pickBoolean(row, keys) {
+        for (const key of keys) {
+          if (row && row[key] !== undefined && row[key] !== null) {
+            return row[key] === true || row[key] === 1 || row[key] === "1" || row[key] === "true";
+          }
+        }
+        return false;
+      }
+
+      function escapeText(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function isCurrentOnlineResult(result, participation) {
+        return latestResult === result && activeParticipation === participation;
+      }
+
+      async function submitScore(result, participation) {
+        if (!participation || !participation.eligible) return null;
+        const client = getSupabaseClient();
+        const finalScore = result.seconds;
+
+        const { data, error } = await client.rpc("submit_score", {
+          p_display_name: participation.name,
+          p_game_slug: GAME_SLUG,
+          p_score: finalScore,
+          p_client_version: CLIENT_VERSION
+        });
+
+        if (!isCurrentOnlineResult(result, participation)) return null;
+        if (error) throw error;
+
+        const validation = validateNormalScoreAck8(data, {
+          gameSlug: GAME_SLUG,
+          displayName: participation.name,
+          score: finalScore,
+          scoreOrder: "desc"
+        });
+        if (!validation.ok) throw new Error("unconfirmed_score_ack");
+        const row = validation.receipt;
+        const info = {
+          currentScore: finalScore,
+          firstScore: row.result_first_score,
+          bestScore: row.result_best_score,
+          playCount: row.result_play_count,
+          isFirstPlay: row.is_first_play,
+          isNewBest: row.is_new_best
+        };
+
+        onlineResultInfo = info;
+
+        setLocalized(els.supabaseStatus, "submitSuccess");
+        renderOnlineSummary(info);
+
+        return info;
+      }
+
+      function normalizeRankingRows(data) {
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.rows)) return data.rows;
+        if (data && Array.isArray(data.data)) return data.data;
+        return [];
+      }
+
+      function renderRankingRows(rows, listEl, statusEl, emptyKey, scoreKeys) {
+        listEl.innerHTML = "";
+        if (!rows.length) {
+          setLocalized(statusEl, emptyKey);
+          return;
+        }
+        setLocalized(statusEl, "");
+        rows.slice(0, 30).forEach((row) => {
+          const rank = typeof row.rank_no === "number" && Number.isSafeInteger(row.rank_no) && row.rank_no > 0 ? row.rank_no : "—";
+          const name = row.display_name || row.player_name || row.name || row.displayName || "";
+          const score = pickNumber(row, scoreKeys);
+          const li = document.createElement("li");
+          if (!name) li.dataset.i18nNameKey = "unnamed";
+          setLocalized(li, "rankingRow", { rank, name, score: score !== null ? score : "—" });
+          listEl.appendChild(li);
+        });
+      }
+
+      function renderOnlineSummary(info, failed = false) {
+        els.onlineStats.innerHTML = "";
+        const add = (key, values = {}, suffixKey = "", highlight = false) => {
+          const line = document.createElement("div");
+          if (highlight) line.className = "best-update";
+          setLocalized(line, key, values, suffixKey);
+          els.onlineStats.appendChild(line);
+        };
+        add("currentScore", { score: info.currentScore });
+        if (info.firstScore !== null) add("firstScoreValue", { score: info.firstScore });
+        else add("firstTry", {}, "unknown");
+        if (info.bestScore !== null) add("bestScoreValue", { score: info.bestScore });
+        else add("bestScore", {}, "unknown");
+        if (info.playCount !== null) add("playCount", { count: info.playCount });
+        else add(failed ? "unknown" : "loading");
+        if (info.isFirstPlay) add("firstRegistered", {}, "", true);
+        if (info.isNewBest) add("newBest", {}, "", true);
+      }
+
+
+      async function loadBestScoreRanking(result, participation, generation = rankingReadGeneration.best) {
+        const client = getSupabaseClient();
+        const { data, error } = await client.rpc("get_best_score_ranking", {
+          p_game_slug: GAME_SLUG,
+          p_limit: 30
+        });
+
+        if (!isCurrentOnlineResult(result, participation) || generation !== rankingReadGeneration.best) return;
+        if (error) throw error;
+
+        renderRankingRows(
+          normalizeRankingRows(data),
+          els.bestRankingList,
+          els.bestRankingStatus,
+          "bestEmpty",
+          ["score", "best_score", "result_best_score", "highest_score", "high_score", "max_score"]
+        );
+      }
+
+      async function loadFirstTryRanking(result, participation, generation = rankingReadGeneration.first) {
+        const client = getSupabaseClient();
+        const { data, error } = await client.rpc("get_first_try_ranking", {
+          p_game_slug: GAME_SLUG,
+          p_limit: 30
+        });
+
+        if (!isCurrentOnlineResult(result, participation) || generation !== rankingReadGeneration.first) return;
+        if (error) throw error;
+
+        renderRankingRows(
+          normalizeRankingRows(data),
+          els.firstRankingList,
+          els.firstRankingStatus,
+          "firstEmpty",
+          ["score", "first_score", "first_try_score", "result_first_score", "initial_score"]
+        );
+      }
+
+      async function refreshRanking(type, result = latestResult, participation = activeParticipation) {
+        if (!["best", "first"].includes(type) || !result || !isCurrentOnlineResult(result, participation)) return;
+        const isBest = type === "best";
+        const generation = ++rankingReadGeneration[type];
+        const status = isBest ? els.bestRankingStatus : els.firstRankingStatus;
+        const list = isBest ? els.bestRankingList : els.firstRankingList;
+        const retry = isBest ? els.bestRankingRetry : els.firstRankingRetry;
+        const current = () => isCurrentOnlineResult(result, participation) && generation === rankingReadGeneration[type];
+        retry.disabled = true;
+        list.innerHTML = "";
+        setLocalized(status, isBest ? "bestLoading" : "firstLoading");
+        try {
+          await (isBest ? loadBestScoreRanking(result, participation, generation) : loadFirstTryRanking(result, participation, generation));
+        } catch (_) {
+          if (!current()) return;
+          list.innerHTML = "";
+          setLocalized(status, isBest ? "bestLoadFailed" : "firstLoadFailed");
+        } finally {
+          if (current()) retry.disabled = false;
+        }
+      }
+
+      async function handleOnlineResult(result) {
+        const participation = activeParticipation;
+        setLocalized(els.supabaseStatus, "submitting");
+        setLocalized(els.bestRankingStatus, "bestLoading");
+        setLocalized(els.firstRankingStatus, "firstLoading");
+        els.onlineStats.innerHTML = "";
+        els.bestRankingList.innerHTML = "";
+        els.firstRankingList.innerHTML = "";
+        setRankingTab("best");
+
+        if (participation && participation.eligible && !scoreSubmitted) {
+          scoreSubmitted = true;
+
+          try {
+            await submitScore(result, participation);
+            if (!isCurrentOnlineResult(result, participation)) return;
+          } catch (error) {
+            if (!isCurrentOnlineResult(result, participation)) return;
+            console.warn("submit_score failed");
+            setLocalized(els.supabaseStatus, "submitUnconfirmed");
+            renderOnlineSummary({ currentScore: result.seconds, firstScore: null, bestScore: null, playCount: null }, true);
+          }
+        }
+
+        if (!participation || !participation.eligible) {
+          setLocalized(els.supabaseStatus, "anonymousResult");
+          const line = document.createElement("div");
+          setLocalized(line, "currentScore", { score: result.seconds });
+          els.onlineStats.appendChild(line);
+        }
+
+        await Promise.allSettled([
+          refreshRanking("best", result, participation),
+          refreshRanking("first", result, participation)
+        ]);
+      }
+
+      function getElapsedMs() {
+        return Math.max(0, performance.now() - startTime);
+      }
+
+      function getScoreSeconds(elapsedMs) {
+        if (elapsedMs >= CLEAR_MS) return CLEAR_SECONDS;
+        if (elapsedMs < 1000) return 1;
+        return Math.max(1, Math.min(64, Math.floor(elapsedMs / 1000)));
+      }
+
+      function startGame() {
+        gameActive = true;
+        scoreSubmitted = false;
+        onlineResultInfo = null;
+        els.retireBtn.disabled = false;
+        startTime = performance.now();
+
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+        }
+
+        animateDrop();
+      }
+
+      function animateDrop() {
+        if (!gameActive) return;
+
+        const elapsed = getElapsedMs();
+        const progress = Math.min(elapsed / CLEAR_MS, 1);
+
+        const eased = progress < 0.78
+          ? progress * 0.84
+          : 0.6552 + ((progress - 0.78) / 0.22) * 0.3448;
+
+        const y = 8 + eased * 73;
+        const wobble = Math.sin(elapsed / 950) * (progress < 0.92 ? 7 : 2);
+        const scale = 1 - progress * 0.08;
+
+        els.drop.style.top = `${y}%`;
+        els.drop.style.transform = `translate(calc(-50% + ${wobble}px), -50%) scale(${scale})`;
+
+        animationId = requestAnimationFrame(animateDrop);
+      }
+
+      function finishGame(action) {
+        if (!gameActive) return;
+
+        gameActive = false;
+
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+          animationId = null;
+        }
+
+        const elapsedMs = getElapsedMs();
+        const seconds = getScoreSeconds(elapsedMs);
+
+        let status;
+        if (action === "retire") {
+          status = "retire";
+        } else if (elapsedMs >= CLEAR_MS) {
+          status = "clear";
+        } else {
+          status = "fail";
+        }
+
+        const result = {
+          status,
+          seconds,
+          message: secondMessages[seconds] || secondMessages[64]
+        };
+
+        latestResult = result;
+        saveBest(result);
+        updateBestDisplay();
+        renderResult(result);
+        showScreen("result");
+        handleOnlineResult(result);
+      }
+
+      function renderResult(result) {
+        const isClear = result.status === "clear";
+        const isRetire = result.status === "retire";
+        els.resultTitle.textContent = t(isClear ? "resultClear" : isRetire ? "resultRetire" : "resultFail");
+        els.resultBadge.textContent = t(isClear ? "badgeClear" : isRetire ? "badgeRetire" : "badgeFail");
+        els.resultBadge.classList.toggle("fail", !isClear);
+        els.scoreValue.textContent = t("points", { score: result.seconds });
+        // Stored Japanese messages remain intact; presentation uses the fixed score.
+        els.resultMessage.textContent = t("second" + String(result.seconds).padStart(2, "0"));
+        els.finalJudge.textContent = t(isClear ? "judgeClear" : isRetire ? "judgeRetire" : "judgeFail");
+        playResultAudio(result);
+      }
+
+
+      function setRankingTab(type) {
+        const isBest = type === "best";
+
+        els.bestRankingTab.classList.toggle("active", isBest);
+        els.firstRankingTab.classList.toggle("active", !isBest);
+        els.bestRankingTab.setAttribute("aria-selected", String(isBest));
+        els.firstRankingTab.setAttribute("aria-selected", String(!isBest));
+        els.bestRankingPanel.classList.toggle("active", isBest);
+        els.firstRankingPanel.classList.toggle("active", !isBest);
+      }
+
+      async function copyText(text) {
+        try {
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+          } else {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.setAttribute("readonly", "");
+            textarea.style.position = "fixed";
+            textarea.style.left = "-9999px";
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textarea);
+          }
+
+          showToast(t("copied"));
+        } catch (_) {
+          showToast(t("copyFailed"));
+        }
+      }
+
+      function showToast(message) {
+        els.toast.textContent = message;
+        els.toast.classList.add("show");
+
+        window.clearTimeout(showToast.timer);
+        showToast.timer = window.setTimeout(() => {
+          els.toast.classList.remove("show");
+        }, 1000);
+      }
+
+      function shareOrCopy(shareData) {
+        const text = String(shareData.text || "");
+        const intent = new URL("https://twitter.com/intent/tweet");
+        intent.searchParams.set("text", text);
+        let popup = null;
+        try {
+          // A noopener open can return null even on success. Detach a blank
+          // window first, then navigate without exposing an opener or referrer.
+          popup = window.open("about:blank", "_blank");
+          if (!popup) throw new Error("Popup unavailable");
+          popup.opener = null;
+          if (popup.opener !== null) throw new Error("Popup opener not detached");
+          const navigation = popup.document.createElement("a");
+          navigation.target = "_self";
+          navigation.rel = "noreferrer";
+          navigation.referrerPolicy = "no-referrer";
+          navigation.href = intent.href;
+          popup.document.body.append(navigation);
+          navigation.click();
+          navigation.remove();
+        } catch (_) {
+          try { popup?.close(); } catch (_) { /* Copy remains available. */ }
+          window.prompt(t("copyManual"), text);
+        }
+      }
+
+      function shareGame() {
+        const title = t("gameTitle");
+        const text = t("shareHome", { title, url: GAME_URL });
+        shareOrCopy({ title, text });
+      }
+
+
+      function shareResult() {
+        if (!latestResult || !Number.isInteger(latestResult.seconds) ||
+            latestResult.seconds < 1 || latestResult.seconds > 65 ||
+            !["clear", "fail", "retire"].includes(latestResult.status)) return;
+        const title = t("gameTitle");
+        const outcome = t({ clear: "outcomeClear", fail: "outcomeFail", retire: "outcomeRetire" }[latestResult.status]);
+        const text = t("shareResult", { title, outcome, score: latestResult.seconds, url: GAME_URL });
+        shareOrCopy({ title, text });
+      }
+
+
+      function goHome() {
+        gameActive = false;
+        countdownRunning = false;
+        els.countdownOverlay.classList.remove("active");
+
+        if (animationId) {
+          cancelAnimationFrame(animationId);
+          animationId = null;
+        }
+
+        updateBestDisplay();
+        showScreen("home");
+      }
+
+      els.startBtn.addEventListener("click", handleStartRequest);
+      els.retryBtn.addEventListener("click", handleStartRequest);
+      els.endBtn.addEventListener("click", () => { gameAudio.play("select"); goHome(); });
+      els.shareGameBtn.addEventListener("click", () => { gameAudio.play("select"); shareGame(); });
+      els.shareResultBtn.addEventListener("click", () => { gameAudio.play("select"); shareResult(); });
+      els.nameInput.addEventListener("input", () => {
+        savePlayerName(els.nameInput.value.trim());
+        setLocalized(els.nameError, "");
+      });
+      els.bestRankingRetry.addEventListener("click", () => { void refreshRanking("best"); });
+      els.bestRankingTab.addEventListener("click", () => setRankingTab("best"));
+      els.firstRankingRetry.addEventListener("click", () => { void refreshRanking("first"); });
+      els.firstRankingTab.addEventListener("click", () => setRankingTab("first"));
+
+      function stopRetirePropagation(event) {
+        event.stopPropagation();
+      }
+
+      if (window.PointerEvent) {
+        els.retireBtn.addEventListener("pointerdown", stopRetirePropagation);
+      } else {
+        els.retireBtn.addEventListener("touchstart", stopRetirePropagation, { passive: true });
+        els.retireBtn.addEventListener("mousedown", stopRetirePropagation);
+      }
+
+      els.retireBtn.addEventListener("click", (event) => {
+        event.stopPropagation();
+        finishGame("retire");
+      });
+
+      function handleGameTouch(event) {
+        event.preventDefault();
+        finishGame("tap");
+      }
+
+      if (window.PointerEvent) {
+        els.gameScreen.addEventListener("pointerdown", handleGameTouch, { passive: false });
+        els.tapLayer.addEventListener("pointerdown", handleGameTouch, { passive: false });
+      } else {
+        els.gameScreen.addEventListener("touchstart", handleGameTouch, { passive: false });
+        els.gameScreen.addEventListener("mousedown", handleGameTouch);
+        els.tapLayer.addEventListener("touchstart", handleGameTouch, { passive: false });
+        els.tapLayer.addEventListener("mousedown", handleGameTouch);
+      }
+
+      document.addEventListener("visibilitychange", () => {
+        // 一時停止は入れない仕様なので、ここでは何もしない
+      });
+
+      els.nameInput.value = readSavedPlayerName();
+      bindAudioControls();
+      bindLanguageControls();
+    })();
+  </script>
+</body>
+</html>
