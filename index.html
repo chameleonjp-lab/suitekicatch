@@ -1216,7 +1216,7 @@
         return [];
       }
 
-      function renderRankingRows(rows, listEl, statusEl, emptyKey, scoreKeys) {
+      function renderRankingRows(rows, listEl, statusEl, emptyKey, scoreKey) {
         listEl.innerHTML = "";
         if (!rows.length) {
           setLocalized(statusEl, emptyKey);
@@ -1226,7 +1226,8 @@
         rows.slice(0, 30).forEach((row) => {
           const rank = typeof row.rank_no === "number" && Number.isSafeInteger(row.rank_no) && row.rank_no > 0 ? row.rank_no : "—";
           const name = row.display_name || row.player_name || row.name || row.displayName || "";
-          const score = pickNumber(row, scoreKeys);
+          const value = row[scoreKey];
+          const score = Number.isInteger(value) && value >= -2147483648 && value <= 2147483647 ? value : null;
           const li = document.createElement("li");
           if (!name) li.dataset.i18nNameKey = "unnamed";
           setLocalized(li, "rankingRow", { rank, name, score: score !== null ? score : "—" });
@@ -1269,7 +1270,7 @@
           els.bestRankingList,
           els.bestRankingStatus,
           "bestEmpty",
-          ["score", "best_score", "result_best_score", "highest_score", "high_score", "max_score"]
+          "best_score"
         );
       }
 
@@ -1288,7 +1289,7 @@
           els.firstRankingList,
           els.firstRankingStatus,
           "firstEmpty",
-          ["score", "first_score", "first_try_score", "result_first_score", "initial_score"]
+          "first_score"
         );
       }
 
