@@ -979,9 +979,15 @@
         els.resultScreen.classList.toggle("active", screenName === "result");
       }
 
-      function loadBest() {
+      function loadBest(throwOnReadError = false) {
+        let raw;
         try {
-          const raw = localStorage.getItem(STORAGE_KEY);
+          raw = localStorage.getItem(STORAGE_KEY);
+        } catch (error) {
+          if (throwOnReadError) throw error;
+          return null;
+        }
+        try {
           if (!raw) return null;
           const parsed = JSON.parse(raw);
           if (!parsed || typeof parsed.seconds !== "number") return null;
@@ -992,7 +998,13 @@
       }
 
       function saveBest(result) {
-        const currentBest = loadBest();
+        let currentBest;
+        try {
+          currentBest = loadBest(true);
+        } catch (_) {
+          // 読めない既存記録は上書きせず、ゲームは続ける
+          return;
+        }
         const shouldSave =
           !currentBest ||
           result.seconds > currentBest.seconds ||

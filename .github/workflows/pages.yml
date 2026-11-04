@@ -25,6 +25,7 @@ jobs:
           node tests/ack8-send-path.cjs
           node tests/online-summary-missing-values.cjs
           node tests/ranking-read-state.cjs
+          node tests/best-storage-read-failure.cjs
           node tests/pages-package.cjs
       - name: Copy only the verified runtime into a new temporary directory
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
