@@ -21,6 +21,7 @@ jobs:
         run: |
           node -e 'if (Number(process.versions.node.split(".")[0]) < 22) process.exit(1)'
           node tests/ranking-real-fields.cjs
+          node tests/ranking-score-strict.cjs
           node tests/ack8-send-path.cjs
           node tests/online-summary-missing-values.cjs
           node tests/ranking-read-state.cjs
